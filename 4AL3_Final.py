@@ -21,7 +21,6 @@ class my_svm():
         self.x = np.array(x_)
         self.y = np.array(y_)
 
-        #p to the ass
         pass
 
     def preprocess(self):
