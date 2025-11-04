@@ -55,7 +55,7 @@ class my_svm():
 
             y_pred = model.predict(X_test)
             print(y_pred)
-            print(y_train)
+            print(y_test)
             tss_score = self.tss(y_test, y_pred)
             tss_scores.append(tss_score)
 
@@ -68,10 +68,29 @@ class my_svm():
         return model
 
     def tss(self, y_true, y_pred):
+        '''
         TP = sum((y_true == 1) & (y_pred == 1))
         TN = sum((y_true == 0) & (y_pred == 0))
         FP = sum((y_true == 0) & (y_pred == 1))
         FN = sum((y_true == 1) & (y_pred == 0))
+        '''
+        TP = 0
+        TN = 0
+        FP = 0
+        FN = 0
+
+        for i in range(len(y_true)):
+            y_t_val = int(y_true[i])
+            y_p_val = int(y_pred[i])
+            if y_t_val == 1 and y_p_val == 0:
+                TP += 1
+            elif y_t_val == 0 and y_p_val == 0:
+                TN += 1
+            elif y_t_val == 0 and y_p_val == 1:
+                FP += 1
+            elif y_t_val == 1 and y_p_val == 0:
+                FN += 1
+
 
         if TP + FN > 0:
             true_positive = TP/(TP + FN)
