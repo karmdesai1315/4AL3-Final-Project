@@ -51,10 +51,10 @@ class my_svm():
             
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
-            print('hi')
             model = self.training(X_train, y_train)
 
             y_pred = model.predict(X_test)
+            print(y_pred)
             print(y_train)
             tss_score = self.tss(y_test, y_pred)
             tss_scores.append(tss_score)
@@ -82,18 +82,31 @@ class my_svm():
             false_positive = FP/(FP + TN)
         else:
             false_positive = 0
-        
+        print("TP: ", TP)
+        print("TN: ", TN)
+        print("FP: ", FP)
+        print("FN: ", FN)
         tss_score = true_positive - false_positive
 
         return tss_score
 
 def experiment():
-    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
     ddf = diabetes_data.drop(columns=["CholCheck","AnyHealthcare","NoDocbcCost","GenHlth","MentHlth","PhysHlth","DiffWalk","Education", "Income"])
 
     y_vals = ddf['Diabetes_binary'].values
     features = ['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 'HvyAlcoholConsump', 'Sex', 'Age']
-    X_vals = np.column_stack([ddf[name].values for name in features])
+    #X_vals = np.column_stack([ddf[name].values for name in features])
+    #features = ['Stroke']
+    X_vals = []
+    
+    for name in features:
+        X_vals.append(ddf[name].values)
+
+    #print(X_vals[0])
+    X_vals = np.column_stack(X_vals)
+    print(X_vals[0])
+    print(y_vals)
 
     svm_model = my_svm(X_vals, y_vals)
     X_preprocessed, y_preprocessed = svm_model.preprocess()
