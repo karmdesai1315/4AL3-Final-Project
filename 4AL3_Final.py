@@ -46,7 +46,8 @@ class my_svm():
     def cross_validation(self, X, y):
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         tss_scores = []
-        
+        loss_scores = []
+
         for train_idx, test_idx in kf.split(X):
             
             X_train, X_test = X[train_idx], X[test_idx]
@@ -58,39 +59,23 @@ class my_svm():
             print(y_test)
             tss_score = self.tss(y_test, y_pred)
             tss_scores.append(tss_score)
+            loss_score = self.hinge_loss(y_test, y_pred)
+            loss_scores.append(loss_score)
 
         avg_tss = sum(tss_scores) / len(tss_scores)
-        return avg_tss
+        return avg_tss, loss_score
     
     def training(self, X_train, y_train):
-        model = SVC(kernel="linear", C = 1)
+        model = SVC(kernel="rbf", C = 1)
         model.fit(X_train, y_train)
         return model
 
     def tss(self, y_true, y_pred):
-        '''
-        TP = sum((y_true == 1) & (y_pred == 1))
-        TN = sum((y_true == 0) & (y_pred == 0))
-        FP = sum((y_true == 0) & (y_pred == 1))
-        FN = sum((y_true == 1) & (y_pred == 0))
-        '''
-        TP = 0
-        TN = 0
-        FP = 0
-        FN = 0
-
-        for i in range(len(y_true)):
-            y_t_val = int(y_true[i])
-            y_p_val = int(y_pred[i])
-            if y_t_val == 1 and y_p_val == 0:
-                TP += 1
-            elif y_t_val == 0 and y_p_val == 0:
-                TN += 1
-            elif y_t_val == 0 and y_p_val == 1:
-                FP += 1
-            elif y_t_val == 1 and y_p_val == 0:
-                FN += 1
-
+        
+        TP = np.sum((y_true == 1) & (y_pred == 1))
+        TN = np.sum((y_true == 0) & (y_pred == 0))
+        FP = np.sum((y_true == 0) & (y_pred == 1))
+        FN = np.sum((y_true == 1) & (y_pred == 0))
 
         if TP + FN > 0:
             true_positive = TP/(TP + FN)
@@ -108,6 +93,12 @@ class my_svm():
         tss_score = true_positive - false_positive
 
         return tss_score
+    
+    def hinge_loss(self, y_true, y_pred):
+        
+        loss = np.maximum(0, 1 - y_true * y_pred)
+
+        return np.mean(loss)
 
 def experiment():
     diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
@@ -133,11 +124,12 @@ def experiment():
     print("Shape of y:", y_preprocessed.shape)
     print("First 5 labels:", y_preprocessed[:5])
     
-    avg_tss = svm_model.cross_validation(X_preprocessed, y_preprocessed)
+    avg_tss, avg_loss = svm_model.cross_validation(X_preprocessed, y_preprocessed)
 
     #print("X_pre: ",X_preprocessed)
     #print("Y_pre: ",y_preprocessed)
 
     print("avg_tss: ", avg_tss)
+    print("avg_loss: ", avg_loss)
     
 experiment()
