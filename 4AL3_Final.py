@@ -47,6 +47,11 @@ class my_svm():
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         tss_scores = []
         loss_scores = []
+        TN_arr = []
+        FP_arr = []
+        FN_arr = []
+        TP_arr = []
+        cm_arr = []
 
         for train_idx, test_idx in kf.split(X):
             
@@ -57,13 +62,21 @@ class my_svm():
             y_pred = model.predict(X_test)
             print(y_pred)
             print(y_test)
-            tss_score = self.tss(y_test, y_pred)
+            tss_score, cm_arr = self.tss(y_test, y_pred)
+            TN_arr.append(cm_arr[0])
+            FP_arr.append(cm_arr[1])
+            FN_arr.append(cm_arr[2])
+            TP_arr.append(cm_arr[3])
             tss_scores.append(tss_score)
             loss_score = self.hinge_loss(y_test, y_pred)
             loss_scores.append(loss_score)
 
+        cm_arr[0] = sum(TN_arr) / len(TN_arr)
+        cm_arr[1] = sum(FP_arr) / len(FP_arr)
+        cm_arr[2] = sum(FN_arr) / len(FN_arr)
+        cm_arr[3] = sum(TP_arr) / len(TP_arr)
         avg_tss = sum(tss_scores) / len(tss_scores)
-        return avg_tss, loss_score
+        return avg_tss, loss_score, tss_scores, cm_arr
     
     def training(self, X_train, y_train):
         model = SVC(kernel="rbf", C = 1)
@@ -91,8 +104,9 @@ class my_svm():
         print("FP: ", FP)
         print("FN: ", FN)
         tss_score = true_positive - false_positive
+        cm_arr = np.array([TN, FP, FN, TP])
 
-        return tss_score
+        return tss_score, cm_arr
     
     def hinge_loss(self, y_true, y_pred):
         
@@ -109,7 +123,9 @@ def experiment():
     #X_vals = np.column_stack([ddf[name].values for name in features])
     #features = ['Stroke']
     X_vals = []
-    
+    all_tss = []
+    cm_arr = []
+
     for name in features:
         X_vals.append(ddf[name].values)
 
@@ -124,12 +140,28 @@ def experiment():
     print("Shape of y:", y_preprocessed.shape)
     print("First 5 labels:", y_preprocessed[:5])
     
-    avg_tss, avg_loss = svm_model.cross_validation(X_preprocessed, y_preprocessed)
+    avg_tss, avg_loss, all_tss, cm_arr = svm_model.cross_validation(X_preprocessed, y_preprocessed)
 
     #print("X_pre: ",X_preprocessed)
     #print("Y_pre: ",y_preprocessed)
 
     print("avg_tss: ", avg_tss)
     print("avg_loss: ", avg_loss)
+
+    mean = np.mean(all_tss)
+    std_dev = np.std(all_tss)
+    #Displaying all confusion matricies and bar graphs
+    cm = np.array([[cm_arr[0], cm_arr[1]], [cm_arr[2], cm_arr[3]]])
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
+    disp.plot()
+    disp.ax_.set_title(f"Confusion Matrix")
+
+    plt.figure(figsize=(8,4))
+    plt.bar(range(1, len(all_tss)+1), all_tss)
+    plt.xlabel("K-Fold")
+    plt.ylabel("TSS Score")
+    plt.ylim(-1,1)
+    plt.title(f"TSS Scores per K-Fold \nGiven:\n Mean (Avg. TSS): {mean:.4f} \u03C3: {std_dev:.4f}")
+    plt.show()
     
 experiment()
