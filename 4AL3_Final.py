@@ -60,8 +60,8 @@ class my_svm():
             model = self.training(X_train, y_train)
 
             y_pred = model.predict(X_test)
-            print(y_pred)
-            print(y_test)
+            #print(y_pred)
+            #print(y_test)
             tss_score, cm_arr = self.tss(y_test, y_pred)
             TN_arr.append(cm_arr[0])
             FP_arr.append(cm_arr[1])
@@ -99,10 +99,10 @@ class my_svm():
             false_positive = FP/(FP + TN)
         else:
             false_positive = 0
-        print("TP: ", TP)
-        print("TN: ", TN)
-        print("FP: ", FP)
-        print("FN: ", FN)
+        #print("TP: ", TP)
+        #print("TN: ", TN)
+        #print("FP: ", FP)
+        #print("FN: ", FN)
         tss_score = true_positive - false_positive
         cm_arr = np.array([TN, FP, FN, TP])
 
@@ -113,6 +113,17 @@ class my_svm():
         loss = np.maximum(0, 1 - y_true * y_pred)
 
         return np.mean(loss)
+
+def boyer_moore(y_vals):
+    N = len(y_vals)
+    output = -1
+    unique_arr, count_arr = np.unique(y_vals, return_counts=True)
+    for i in range(0, len(unique_arr) - 1):
+        if count_arr[i] > N/2:
+            output = unique_arr[i]
+    
+    return output
+
 
 def experiment():
     diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
@@ -126,19 +137,21 @@ def experiment():
     all_tss = []
     cm_arr = []
 
+    boyer_moore_out = boyer_moore(y_vals)
+
     for name in features:
         X_vals.append(ddf[name].values)
 
     #print(X_vals[0])
     X_vals = np.column_stack(X_vals)
-    print(X_vals[0])
-    print(y_vals)
+    #print(X_vals[0])
+    #print(y_vals)
 
     svm_model = my_svm(X_vals, y_vals)
     X_preprocessed, y_preprocessed = svm_model.preprocess()
-    print("Shape of X:", X_preprocessed.shape)
-    print("Shape of y:", y_preprocessed.shape)
-    print("First 5 labels:", y_preprocessed[:5])
+    #print("Shape of X:", X_preprocessed.shape)
+    #print("Shape of y:", y_preprocessed.shape)
+    #print("First 5 labels:", y_preprocessed[:5])
     
     avg_tss, avg_loss, all_tss, cm_arr = svm_model.cross_validation(X_preprocessed, y_preprocessed)
 
@@ -147,6 +160,7 @@ def experiment():
 
     print("avg_tss: ", avg_tss)
     print("avg_loss: ", avg_loss)
+    print("Baseline Prediction: ", boyer_moore_out)
 
     mean = np.mean(all_tss)
     std_dev = np.std(all_tss)
