@@ -1,0 +1,199 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[]{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{listings}
+\usepackage{indentfirst}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{Group 13 Progress Report:\\Diabetes Prediction Algorithm using Support Vector Machines}
+
+
+\author{Karm Desai, John Mann \\
+  \texttt{\{desaik21, mannj22\}@mcmaster.ca} }
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+\maketitle
+% \begin{abstract}
+% \end{abstract}
+
+\section{Introduction}
+
+This project focuses on predicting the likelihood of type 2 diabetes based on patient health factors using a support vector machine (SVM) learning model. By training on a diverse dataset \cite{cdc}, the model will classify patients into one of two outcomes: no diabetes, and pre-diabetes/diabetes. The goal is be able to predict the relationship between a number of key factors from the given values in the dataset and the whether or not the patient has pre-diabeters or diabetes. By developing this relationship with our model, we aim to provide an early and accessible method for assessing diabetes risk, enabling individuals to seek professional medical evaluation sooner. A key challenge lies in achieving high model accuracy given the large number of health parameters and the variability present in the dataset.
+
+
+\section{Related Work}
+
+Several studies have explored the use of machine learning techniques for predicting diabetes and analyzing feature importance in patient datasets. Prior work suggests a strong connection between features such as body mass index (BMI), smoking status, cholesterol levels, and diabetes risk. For example, Tasin et al. investigated modelling strategies for diabetes prediction using various statistical approaches \cite{tasinetal}. Abnoosian et al. proposed a pipeline-based framework to classify patients as diabetic, pre-diabetic, or non-diabetic, and demonstrated that both logistic regression and support vector machine (SVM) models can achieve over 97\% accuracy \cite{abnoosianetal}. Similarly, Dharmarathne et al. highlighted the robustness of SVMs in health-related applications and emphasized their stability when applied to such tasks \cite{DHARMARATHNE2024100301}. Further research into SVM methodologies indicates they excel at handling large datasets and optimizing model parameters efficiently \cite{CERVANTES2020189}.
+
+Based on these findings, our approach builds on proven techniques in the literature, focusing on SVM and logistic regression for model development. As our project progresses, we will continue to evaluate the suitability of these and other algorithms for our dataset, especially as we analyze correlations among the features and refine our modelling strategy. The choice of which features and methods to prioritize remains an ongoing process, guided by both prior research and results obtained in our current work.
+
+\section{Dataset}
+
+Data collection comes from the Diabetes health indicator dataset obtained online from Kaggle. This data has been classified, labelled and is open sourced. The dataset being used for this project is of type .csv which is imported into python and our model for preprocessing, training and validation. This data was collected as a part of the Behavioral Risk Factor Surveillance System (BRFSS) – a telephone survey carried out by the CDC in 2015 \cite{cdc}. The study contains three separate CSV files with slightly different outputs, so for this project in particular we will be using the CVS file that has binary outputs to the data as it will work with our SVM model much better than the other versions. 
+
+\subsection{Preprocessing}
+
+The preprocess function standardizes the feature data from our dataset before it is used to train the model. It does this by applying a StandardScaler, which transforms each feature to have a mean of zero and a standard deviation of one (StandardScalar is a part of the sklearn library). This normalization ensures that all features contribute equally to the model's learning process, preventing features with larger scales from dominating those with smaller scales. The function then returns the scaled feature matrix along with the original target labels using the fit\_transform command.This preprocessing step is essential, as it allows algorithms like the Support Vector Machines we're using to converge more efficiently and make more reliable predictions by ensuring comparability between features. Without this step, the learning algorithm could bias toward other features, reducing the overall accuracy of the resulting model.
+
+{\footnotesize
+\begin{lstlisting}[language=Python]
+def preprocess(self):
+    scalar = StandardScaler()
+    self.x = scalar.fit_transform(self.x)
+    return self.x, self.y
+\end{lstlisting}
+}
+
+\section{Features}
+
+Our model uses several health indicators as features to predict diabetes presence, including high blood pressure, high cholesterol, body mass index (BMI), smoking status, history of stroke, heart disease or attack, physical activity, fruit and vegetable consumption, heavy alcohol consumption, sex, and age. These features are combined into a feature matrix, which is then standardized using a StandardScaler so that each feature has zero mean and unit variance. This step is essential since it ensures that variables measured on different scales do not disproportionately influence the model’s learning process.
+
+We are not currently performing advanced feature engineering, automated feature selection, or learning embeddings. Instead, our process relies on driven feature selection, dropping unrelated columns based on clinical relevance and data quality based off our research. In the future, we plan on creating functions to display which specific features most affect presence of diabetes. After preprocessing, the features are input directly into a support vector machine (SVM) classifier. Our model uses an RBF kernel, evaluating its performance using k-fold cross-validation and metrics such as True Skill Statistic (TSS) and hinge loss. As of now, we have not fine-tuned these hyperparameters and we are planning on incorporating a function such as GridSearchCV to aid us in finding the optimal values.
+
+As the project progresses, results from cross-validation and analysis of model performance will help inform whether further feature selection, engineering, or alternative modelling approaches should be considered. For now, a curated set of clinically meaningful features is used as the input for our SVM-based modelling framework.
+
+\section{Implementation}
+
+Our implementation uses the Support Vector Machine (SVM) model to predict the results based on specific columns from the diabetes dataset that are using. Our SVM will return a binary output of either 0 or 1, which represent "No Diabetes present" and "Pre-Diabetes/Diabetes present" respectively. We use the following columns from our CSV dataset to predict the outputs: "HighBP" (0 or 1, No vs High blood pressure), "HighChol" (0 or 1, No vs High cholesterol), "BMI" (Body mass index), "Smoker" (0 or 1, Patient hasn't/has smoked 100 cigarettes), "Stroke" (0 vs 1, No vs Yes stroke), "HeartDiseaseorAttack" (0 vs 1, No vs Yes if patient has coronary heart disease [CHD] or myocardial infarction [MI]), "PhysActivity" (0 vs 1, Patient hasn't/has done physical activity in the past 30 days), "Fruits" (0 vs 1, Patient doesn't/does consumed fruit 1+ times a day), "Veggies" (0 vs 1, Patient doesn't/does consumed vegetable 1+ times a day), "HvyAlcoholConsump" (0 vs 1, Patient isn't/is a heavy drinker), "Sex" (0 vs 1, Female vs Male), and "Age" (Age of patient). We determined that these 12 columns would contain the data most relevant to determining whether or not a patient has diabetes/pre-diabetes or not, and omitted the other columns from being used to train the model. This is known as our 'feature vector'.
+
+Now that we've determined which data we want to use to train and validate our model, we can move on to preprocessing that data and splitting it into both train and validation sets. As described previously in Section 3.1, preprocessing is done by passing the combined dataset to a function within our SVM class that makes use of the SKLEARN module to call StandardScaler on that passed dataset. After preprocessing is finished, our next step is separating our data into a testing set and validation set. To do this, our SVM model includes a function called cross validation, which imports both the X and Y dataset and then calls the KFold function from SKLEARN. For our specific use case, we have decided to use 5 different folds for our cross validation and shuffle those datasets before splitting them into batches to reduce the chance of our different folds being too similar and promoting overfitting. 
+
+After calling KFold and getting our 5 different folds, we can finally start to train our SVM model. To do this, cross validation iterates through each different Kfold to set our X and Y train values which are then used to train the model for that Kfold. The training of our model is done by calling the training function within our SVM class, which fits the model using a defined kernel. As stated within our report, the defined kernel will eventually be determined through data analysis with GridSearchCV rather than manually, but for the time being we have manually chosen to use the RBF kernel for our first iterations. Once the model is trained, we then use the test X values from our Kfold to create a predicted Y value to go along with the actual test y value from Kfold. After both Y(test) and Y(Predicted) have been assigned values, we determine the validity of the model by calling two other functions from our SVM class, Hinge Loss and TSS. TSS works by comparing all of the results between our Y(test) and Y(Predicted) arrays and determining the number of true positives, false positives, true negatives and false negatives that are present within our results. After those values have been determined, the final TSS score is calculated according to the TSS equation (\ref{eq:tss}). Hinge loss is calculated using its own equation (\ref{eq:hl}), the value of which is then returned back to the cross validation function where the average tss score between all folds is calculated and then returned to the main function along with the hinge loss of the model. 
+
+After we have output our hinge loss and average TSS from running cross validation we are able to properly analyze the accuracy of our model. The TSS is also ouput on a graph so we can analyze those values visually and analyze trends, which will become much more useful further into the project as we further develop out model and compare our future versions with the current models and functions. The ideal outputs of our model should have the average TSS score as close to 1 as possible and the hinge loss as close to 0. As we further improve our classes, functions and models we will continue to reference the trends of those values to make decisions on our implementation.
+
+In order to compare our model to a baseline, we decided to use the Boyer-Moore majority voting algorithm. This algorithm works by taking each valid output and counting the number of times that this valid output occurs in our dataset. If this valid output occurs greater than n / 2 times in our dataset (where n is the number of outputs in our dataset) then the model returns that output as its predicted value. If no valid output occurs, then it returns -1. Using this method as a baseline helps us measure whether our SVM model is learning patterns or if it simply copies the most common outcome. Since positive cases exist in our dataset, we can be confident that if our SVM model predicts a positive case (class 1) when the baseline does not, our model is capturing useful information beyond the "majority class" strategy. This makes our evaluation more robust and meaningful by placing our results in the context of simple yet logical alternatives.
+
+\section{Results and Evaluation}
+
+Our approach to evaluating the model’s performance relies on using cross-validation, which carefully assesses how well the support vector machine (SVM) distinguishes between diabetic and non-diabetic cases. Specifically, we use k-fold cross-validation with five folds, meaning the dataset is split into five equally sized partitions. For each fold, the model is trained on four partitions and tested on the fifth, ensuring all data points are used for both training and evaluation but never at the same time. This technique helps ensure that the model generalizes which in turn prevents overfitting to the particularities of a single split.
+
+Within each fold, the model’s predictions for the test set are evaluated using several metrics. The main metric we use is the True Skill Statistic (TSS), which is sensitive to both the true positive rate and the false positive rate. Our code computes TSS by measuring the difference between sensitivity (proportion of actual diabetics correctly identified) and the false positive rate (proportion of non-diabetics incorrectly classified as diabetic). In addition, we calculate hinge loss which is typically standard for SVM's which reflects how well the predictions respect the decision margin.
+
+Initial results show an average TSS of approximately 0.05 and average hinge loss of roughly 0.995 across five folds. These values suggest the model is only marginally better than random chance and that prediction margins are often not respected, which may be due to imbalanced data, irrelevant features, lack of additional preprocessing, or improper SVM hyperparameters.
+
+We can visualize these results by plotting both the average TSS for each of our 5 K-folds as well as the total average confusion matrix. We can see in ~\ref{fig:TSS} how this output looks for one run of our 5 different K-folds and how the graph visualizes how each of these folds performed with their TSS scores. In addition, ~\ref{fig:CM} shows the visual results of the number of True Positive, True Negative, False Positive and False Negative from our model in a way that can be easily analyzed.
+
+As mentioned in Section 4, we wanted to compare our model to a baseline using the Boyer-Moore majority voting algorithm. The algorithm identifies the most frequent output in the dataset and predicts it if it appears more than half the time. Otherwise, it returns -1. In our case, the Boyer-Moore algorithm outputs a 0 as its predicted value which we then use as our baseline model for comparison. Since we know that positive values do exist in our dataset, if any of our SVM models predict a 1 at any output, then we know that our developed model is more accurate and is outperforming the baseline.
+
+\section{Feedback and Plans}
+
+During our tutorial session on November 6th, 2025, we had a discussion with our TA Parisa Salmani to receive feedback on our current implementation of our machine learning model. Currently, our model is running on the RBF kernel which is a temporary placeholder to determine the accuracy of our model. Upon discussing with the TA, we plan on incorporating an analytical solution to the kernel (potentially utilizing GridSearchCV). Additionally, we reviewed the overall performance of our current iteration of our model, and received feedback on how we can improve our analytical outputs (Graphs, accuracy, f1 scores, etc.) to further analyze and make adjustments to our model for the future.
+
+As mentioned previously, to improve our model for future iterations, we plan on tuning our hyperparameters for a more accurate result, displaying our accuracy, precision, recall and f1 scores of our model through our loss function, and overall improving the workflow of our code. We also plan on analytically choosing which feature variables influence the output rather than manually selecting them based on research. 
+
+\nocite{cdc, tasinetal, abnoosianetal, DHARMARATHNE2024100301, CERVANTES2020189}
+
+\section{Equations}
+
+Equation for TSS:
+\begin{equation}
+  \label{eq:tss}
+  TSS = \frac{TP}{TP + FN} - \frac{FP}{FP + TN}
+\end{equation}
+
+Equation for Hinge Loss:
+
+\begin{equation}
+    \label{eq:hl}
+    Hinge Loss = max(0, 1 - y_{true} \cdot y_{prediction})
+\end{equation}
+
+% \section*{Limitations}
+
+\section*{Team Contributions}
+
+Throughout development for the current iteration of our machine learning model, both team members contributed equally and fairly towards our implementation thus far. Karm and John both worked together on developing a rough model for our SVM classifier by utilizing class resources and online material to have a solid foundation. John worked on debugging code when it ran into issues and Karm worked on improving overall workflow for the code. We had meetings weekly to discuss our progress on the project and ended up with a viable and thorough implementation. Additionally, we both worked together on this report to document our progress and share results of our code. In essence, each team member contributed equally and fairly to the progress of this project.
+
+% Bibliography entries for the entire Anthology, followed by custom entries
+%\bibliography{custom,anthology-overleaf-1,anthology-overleaf-2}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{Proposal LaTeX/Tables/TSS_Figure.png}
+    \captionsetup{justification=centering}
+    \caption{Figure detailing the average TSS scores over all 5 different K-folds}
+    \label{fig:TSS}
+\end{figure*}
+
+\begin{figure*}
+    \centering
+    \hspace*{-2cm}
+    \includegraphics[width=\linewidth]{Proposal LaTeX/Tables/CM_Figure.png}
+    \captionsetup{justification=centering}
+    \caption{Figure detailing the confusion matrix generated from the average number of True Positive, True Negative, False Positive and False Negative scores from all K-folds}
+    \label{fig:CM}
+\end{figure*}
+
+% Custom bibliography entries only
+\bibliography{custom}
+
+% \appendix
+
+% \section{Example Appendix}
+% \label{sec:appendix}
+
+% This is an appendix.
+
+\end{document}
+
+
