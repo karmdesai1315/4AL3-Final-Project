@@ -9,7 +9,7 @@ from sklearn.svm import SVC
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit, StratifiedKFold
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 import random
@@ -45,6 +45,9 @@ class my_svm():
     
     def cross_validation(self, X, y):
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        #kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        #kf = StratifiedShuffleSplit(n_splits=10, test_size=0.2, train_size=0.2, random_state=42)
+        #kf.get_n_splits(X, y)
         tss_scores = []
         loss_scores = []
         TN_arr = []
@@ -79,7 +82,7 @@ class my_svm():
         return avg_tss, loss_score, tss_scores, cm_arr
     
     def training(self, X_train, y_train):
-        model = SVC(kernel="rbf", C = 1)
+        model = SVC(kernel="rbf", C = 0.1, class_weight='balanced', gamma='scale')
         model.fit(X_train, y_train)
         return model
 
@@ -126,7 +129,7 @@ def boyer_moore(y_vals):
 
 
 def experiment():
-    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
+    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=10000)
     ddf = diabetes_data.drop(columns=["CholCheck","AnyHealthcare","NoDocbcCost","GenHlth","MentHlth","PhysHlth","DiffWalk","Education", "Income"])
 
     y_vals = ddf['Diabetes_binary'].values
