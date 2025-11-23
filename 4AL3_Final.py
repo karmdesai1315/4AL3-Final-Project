@@ -43,7 +43,7 @@ class my_svm():
         self.x = scalar.fit_transform(self.x)
         return self.x, self.y
     
-    def cross_validation(self, X, y):
+    def cross_validation(self, X, y, best_params):
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         #kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         #kf = StratifiedShuffleSplit(n_splits=10, test_size=0.2, train_size=0.2, random_state=42)
@@ -60,7 +60,7 @@ class my_svm():
             
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
-            model = self.training(X_train, y_train)
+            model = self.training(X_train, y_train, best_params)
 
             y_pred = model.predict(X_test)
             #print(y_pred)
@@ -81,8 +81,12 @@ class my_svm():
         avg_tss = sum(tss_scores) / len(tss_scores)
         return avg_tss, loss_score, tss_scores, cm_arr
     
-    def training(self, X_train, y_train):
-        model = SVC(kernel="rbf", C = 0.1, class_weight='balanced', gamma='scale')
+    def training(self, X_train, y_train, best_params):
+        C_best = best_params['C']
+        kernel_best = best_params['kernel']
+        gamma_best = best_params.get('gamma', 'scale')
+        #model = SVC(kernel="rbf", C = 0.1, class_weight='balanced', gamma='scale')
+        model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best)
         model.fit(X_train, y_train)
         return model
 
@@ -129,7 +133,7 @@ def boyer_moore(y_vals):
 
 
 def experiment():
-    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=10000)
+    diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
     ddf = diabetes_data.drop(columns=["CholCheck","AnyHealthcare","NoDocbcCost","GenHlth","MentHlth","PhysHlth","DiffWalk","Education", "Income"])
 
     y_vals = ddf['Diabetes_binary'].values
@@ -156,7 +160,19 @@ def experiment():
     #print("Shape of y:", y_preprocessed.shape)
     #print("First 5 labels:", y_preprocessed[:5])
     
-    avg_tss, avg_loss, all_tss, cm_arr = svm_model.cross_validation(X_preprocessed, y_preprocessed)
+    grid_params = {
+        'C': [0.1, 1, 10, 50],
+        'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
+        'gamma': ['scale', 'auto']
+    }
+
+    svc_test = SVC()
+    grid_search = GridSearchCV(svc_test, grid_params, scoring='accuracy', cv=5)
+    grid_search.fit(X_preprocessed, y_preprocessed)
+    best_params = grid_search.best_params_
+    print("Best parameters from GridSearchCV: ", best_params)
+
+    avg_tss, avg_loss, all_tss, cm_arr = svm_model.cross_validation(X_preprocessed, y_preprocessed, best_params)
 
     #print("X_pre: ",X_preprocessed)
     #print("Y_pre: ",y_preprocessed)
