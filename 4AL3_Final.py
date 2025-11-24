@@ -41,6 +41,7 @@ class my_svm():
         '''
         scalar = StandardScaler()
         self.x = scalar.fit_transform(self.x)
+        
         return self.x, self.y
     
     def cross_validation(self, X, y, best_params):
@@ -63,9 +64,15 @@ class my_svm():
             model = self.training(X_train, y_train, best_params)
 
             y_pred = model.predict(X_test)
+            #print("Y Test: ", y_test)
+            #print("Y Predicted: ", y_pred)
             #print(y_pred)
             #print(y_test)
             tss_score, cm_arr = self.tss(y_test, y_pred)
+            #print("TN: ", cm_arr[0])
+            #print("FP: ", cm_arr[1])
+            #print("FN: ", cm_arr[2])
+            #print("TP: ", cm_arr[3])
             TN_arr.append(cm_arr[0])
             FP_arr.append(cm_arr[1])
             FN_arr.append(cm_arr[2])
@@ -79,7 +86,8 @@ class my_svm():
         cm_arr[2] = sum(FN_arr) / len(FN_arr)
         cm_arr[3] = sum(TP_arr) / len(TP_arr)
         avg_tss = sum(tss_scores) / len(tss_scores)
-        return avg_tss, loss_score, tss_scores, cm_arr
+        avg_loss = sum(loss_scores) / len(loss_scores)
+        return avg_tss, avg_loss, tss_scores, cm_arr
     
     def training(self, X_train, y_train, best_params):
         C_best = best_params['C']
@@ -144,15 +152,26 @@ def experiment():
     all_tss = []
     cm_arr = []
 
+    correlation_arr = []
+
     boyer_moore_out = boyer_moore(y_vals)
 
     for name in features:
         X_vals.append(ddf[name].values)
 
+    for arr in X_vals:
+        r = np.corrcoef(arr, y_vals)
+        correlation_arr.append(r[0,1])
+
     #print(X_vals[0])
     X_vals = np.column_stack(X_vals)
+    #print(X_vals)
+
+    
     #print(X_vals[0])
     #print(y_vals)
+
+    print(correlation_arr)
 
     svm_model = my_svm(X_vals, y_vals)
     X_preprocessed, y_preprocessed = svm_model.preprocess()
