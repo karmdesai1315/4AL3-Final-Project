@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit, Strati
 from sklearn.datasets import make_classification
 import random
 
-
+# Model (SVM) Definition
 class my_svm():
     def __init__(self, x_:list, y_:list):
         #Class features and labels initialization
@@ -32,20 +32,19 @@ class my_svm():
     
     def cross_validation(self, X, y, best_params):
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
-        #kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        #kf = StratifiedShuffleSplit(n_splits=10, test_size=0.2, train_size=0.2, random_state=42)
-        #kf.get_n_splits(X, y)
         tss_scores = []
         loss_scores = []
+        precision_scores = []
+        recall_scores = []
+        f1_scores = []
+
         TN_arr = []
         FP_arr = []
         FN_arr = []
         TP_arr = []
         cm_arr = []
-        precision_scores = []
-        recall_scores = []
-        f1_scores = []
 
+        # K-fold cross-validation
         for train_idx, test_idx in kf.split(X):
             
             X_train, X_test = X[train_idx], X[test_idx]
@@ -69,7 +68,7 @@ class my_svm():
             recall_scores.append(recall)
             f1_scores.append(f1)
 
-
+        # calculate averages and confusion matrix entries
         cm_arr[0] = sum(TN_arr) / len(TN_arr)
         cm_arr[1] = sum(FP_arr) / len(FP_arr)
         cm_arr[2] = sum(FN_arr) / len(FN_arr)
@@ -88,7 +87,7 @@ class my_svm():
         C_best = best_params['C']
         kernel_best = best_params['kernel']
         gamma_best = best_params.get('gamma', 'scale')
-        #model = SVC(kernel="rbf", C = 0.1, class_weight='balanced', gamma='scale')
+
         model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best)
         model.fit(X_train, y_train)
         return model
@@ -109,10 +108,6 @@ class my_svm():
             false_positive = FP/(FP + TN)
         else:
             false_positive = 0
-        #print("TP: ", TP)
-        #print("TN: ", TN)
-        #print("FP: ", FP)
-        #print("FN: ", FN)
         tss_score = true_positive - false_positive
         cm_arr = np.array([TN, FP, FN, TP])
 
@@ -126,7 +121,6 @@ class my_svm():
         for i in range(len(y_pred)):
             if y_pred[i] == 0:
                 y_pred[i] = -1
-        #loss = np.maximum(0, 1 - y_true * y_pred)
         loss = hinge_loss(y_true, y_pred) # function uses -1 and 1 as classes
         return loss
     
@@ -149,6 +143,7 @@ def boyer_moore(y_vals):
 
 
 def experiment():
+    #---------Dataset Retrieval---------#
     diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
     #ddf = diabetes_data.drop(columns=["CholCheck","AnyHealthcare","NoDocbcCost","GenHlth","MentHlth","PhysHlth","DiffWalk","Education", "Income"])
     ddf = diabetes_data
@@ -162,14 +157,15 @@ def experiment():
     all_tss = []
     cm_arr = []
 
-    correlation_arr = []
 
     boyer_moore_out = boyer_moore(y_vals)
 
     for name in features:
         X_vals.append(ddf[name].values)
 
-    #---------Feature Correlation---------#
+    #---------Feature Vector Selection---------#
+    correlation_arr = []
+    
     for arr in X_vals:
         r = np.corrcoef(arr, y_vals)
         correlation_arr.append(r[0,1])
@@ -189,20 +185,7 @@ def experiment():
     print(clipped_features)
     
     clipped_X_vals = np.column_stack(clipped_X_vals)
-
-    #------View Correlation on Bar Graph------#
-    # Create a bar graph
-    '''
-    corr_target_graph = plt.bar(features, correlation_arr, color="skyblue")
-
-    # Set the title and change the font size of y labels
-    corr_target_graph.title('Correlation with Diabetes_binary', fontsize=12)
-    corr_target_graph.tick_params(axis='y', labelsize=8)
-
-    # Remove the spines of top, left and right
-    corr_target_graph.spines[['top', 'left', 'right']].set_visible(False)
-    '''
-    
+ 
     #----------SVM Model Creation-------#
     svm_model = my_svm(clipped_X_vals, y_vals)
     X_preprocessed, y_preprocessed = svm_model.preprocess()
@@ -213,12 +196,14 @@ def experiment():
         'gamma': ['scale', 'auto']
     }
 
+    #---------GridSearchCV for Hyperparameter Tuning---------#
     svc_test = SVC()
     grid_search = GridSearchCV(svc_test, grid_params, scoring='accuracy', cv=5)
     grid_search.fit(X_preprocessed, y_preprocessed)
     best_params = grid_search.best_params_
     print("Best parameters from GridSearchCV: ", best_params)
 
+    #---------Cross Validation---------#
     avg_tss, avg_loss, all_tss, cm_arr, avg_precision, avg_recall, avg_f1 = svm_model.cross_validation(X_preprocessed, y_preprocessed, best_params)
 
     #print("X_pre: ",X_preprocessed)
@@ -232,17 +217,20 @@ def experiment():
 
     print("Baseline Prediction: ", boyer_moore_out)
 
+    #---------Plotting---------#
     fig1, ax1 = plt.subplots()
     fig2, ax2 = plt.subplots()
 
     mean = np.mean(all_tss)
     std_dev = np.std(all_tss)
-    #Displaying all confusion matricies and bar graphs
+
+    # Confusion Matrices Figure
     cm = np.array([[cm_arr[0], cm_arr[1]], [cm_arr[2], cm_arr[3]]])
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
     disp.plot()
     disp.ax_.set_title(f"Confusion Matrix")
 
+    # TSS Scores Graph
     #ax1.figure(figsize=(8,4))
     ax1.bar(range(1, len(all_tss)+1), all_tss)
     ax1.set_xlabel("K-Fold")
@@ -250,6 +238,7 @@ def experiment():
     ax1.set_ylim(-1,1)
     ax1.set_title(f"TSS Scores per K-Fold \nGiven:\n Mean (Avg. TSS): {mean:.4f} \u03C3: {std_dev:.4f}")
 
+    # View Correlation on Bar Graph
     ax2.bar(features, correlation_arr)
     ax2.set_xlabel("Features")
     ax2.set_ylabel("Correlation Score")
