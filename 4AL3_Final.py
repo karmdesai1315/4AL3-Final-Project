@@ -1,3 +1,16 @@
+# Authors: Karm Desai, John Mann
+# Created: Sep 9, 2025
+# Last Modified: Dec 4, 2025
+# Purpose: This python includes SVM and RFC methods for a binary classifier to detect diabetes
+
+# Dependencies: sklearn
+# Python Version: 3.12
+
+# References
+# Sklearn Website - https://scikit-learn.org/stable/
+# Python Documentation
+
+#-------Imports-------#
 import os
 import sys
 import numpy as np
@@ -13,10 +26,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit, StratifiedKFold
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.feature_selection import SelectKBest, mutual_info_classif, f_classif
 import random
 
-# Model (SVM) Definition
+#-------Model Support Vector Machine (SVM) Definition-------#
 class my_svm():
     def __init__(self, x_:list, y_:list):
         #Class features and labels initialization
@@ -26,14 +39,12 @@ class my_svm():
         pass
 
     def preprocess(self):
-        #Removing nan values from CSV file if they exist
         scalar = StandardScaler()
         self.x = scalar.fit_transform(self.x)
         
         return self.x, self.y
     
     def cross_validation(self, X, y, best_params):
-        #kf = KFold(n_splits=5, shuffle=True, random_state=42)
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         tss_scores = []
         loss_scores = []
@@ -49,7 +60,6 @@ class my_svm():
         cm_arr = []
 
         # K-fold cross-validation
-        #for train_idx, test_idx in kf.split(X):
         for train_idx, test_idx in kf.split(X, y):
             
             X_train, X_test = X[train_idx], X[test_idx]
@@ -125,17 +135,9 @@ class my_svm():
     
     def hinge_loss(self, y_true, y_pred):
         #change y_true, y_pred from 0 to -1 to use in hinge_loss function
-
         y_true_h = np.where(y_true == 0, -1, 1)
         y_pred_h = np.where(y_pred == 0, -1, 1)
-        '''
-        for i in range(len(y_true)):
-            if y_true[i] == 0:
-                y_true[i] = -1
-        for i in range(len(y_pred)):
-            if y_pred[i] == 0:
-                y_pred[i] = -1
-        '''
+
         loss = hinge_loss(y_true_h, y_pred_h) # function uses -1 and 1 as classes
         return loss
     
@@ -146,7 +148,7 @@ class my_svm():
     
         return precision, recall, f1
 
-# Model Random Forest Classifier        
+#-------Model Random Forest Classifier (RFC) Definition-------#        
 class my_RFC():
      def __init__(self, x_:list, y_:list):
         #Class features and labels initialization
@@ -156,7 +158,6 @@ class my_RFC():
         pass
      
      def preprocess(self):
-        #Removing nan values from CSV file if they exist
         scalar = StandardScaler()
         self.x = scalar.fit_transform(self.x)
         
@@ -175,7 +176,6 @@ class my_RFC():
      
      def hinge_loss(self, y_true, y_pred):
         #change y_true, y_pred from 0 to -1 to use in hinge_loss function
-
         y_true_h = np.where(y_true == 0, -1, 1)
         y_pred_h = np.where(y_pred == 0, -1, 1)
 
@@ -211,7 +211,6 @@ class my_RFC():
         return tss_score, cm_arr
      
      def cross_validation(self, X, y):
-        #kf = KFold(n_splits=5, shuffle=True, random_state=42)
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         loss_scores = []
         precision_scores = []
@@ -226,7 +225,6 @@ class my_RFC():
         cm_arr = []
 
         # K-fold cross-validation
-        #for train_idx, test_idx in kf.split(X):
         for train_idx, test_idx in kf.split(X, y):
             
             X_train, X_test = X[train_idx], X[test_idx]
@@ -279,95 +277,69 @@ def boyer_moore(y_vals):
     return output
 
 
+#------Experiment on Models------#
 def experiment():
-    #---------Dataset Retrieval---------#
+
+    #--Dataset Retrieval--#
     diabetes_data = pd.read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", nrows=1000)
-    ddf = diabetes_data.drop(columns=["AnyHealthcare","NoDocbcCost","MentHlth","DiffWalk","Education", "Income"])
-    #ddf = diabetes_data
+    ddf = diabetes_data.drop(columns=["AnyHealthcare", "NoDocbcCost", "MentHlth", "DiffWalk", "Education", "Income"])
 
     y_vals = ddf['Diabetes_binary'].values
-    #features = ['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 'HvyAlcoholConsump', 'Sex', 'Age']
-    #features = ['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 'HvyAlcoholConsump', 'Sex', 'Age', "CholCheck","AnyHealthcare","NoDocbcCost","GenHlth","MentHlth","PhysHlth","DiffWalk","Education", "Income"]
-    features = ['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 'HvyAlcoholConsump', 'Sex', 'Age', "CholCheck","GenHlth","PhysHlth"]
-    #X_vals = np.column_stack([ddf[name].values for name in features])
-    #features = ['Stroke']
-    X_vals = []
-    all_tss = []
-    cm_arr = []
+    features = ['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Fruits', 'Veggies', 'HvyAlcoholConsump', 'Sex', 'Age', "CholCheck", "GenHlth", "PhysHlth"]
 
-    boyer_moore_out = boyer_moore(y_vals)
+    #--Array Initialization--#
+    X_vals = [] # Features array
+    all_tss = [] # TSS values
+    cm_arr = [] # Confusion Matrix values
 
+    #--Append feature values to feature array--#
     for name in features:
         X_vals.append(ddf[name].values)
 
-    #---------Feature Vector Selection---------#
+    #--Baseline Model Prediction--#
+    boyer_moore_out = boyer_moore(y_vals)
+    print("Baseline Prediction: ", boyer_moore_out)
+
+    #--Feature Vector Selection--#
     # Convert features to matrix (same as before)
     X_vals = np.column_stack([ddf[name].values for name in features])
-    selector = SelectKBest(score_func=mutual_info_classif, k=10)
+    selector = SelectKBest(score_func=mutual_info_classif, k=10)  
     X_selected = selector.fit_transform(X_vals, y_vals)
     selected_mask = selector.get_support()
     clipped_features = [feat for feat, keep in zip(features, selected_mask) if keep]
     clipped_X_vals = X_selected
 
     print("Selected features:", clipped_features)
-    '''
-    correlation_arr = []
-    
-    for arr in X_vals:
-        r = np.corrcoef(arr, y_vals)
-        correlation_arr.append(r[0,1])
-
-    X_vals = np.column_stack(X_vals)
-    #print(correlation_arr)
-
-    clipped_features = []
-    for i in range(1, len(features)):
-        if correlation_arr[i] > 0:
-            clipped_features.append(features[i])
-
-    clipped_X_vals = []
-    for name in clipped_features:
-        clipped_X_vals.append(ddf[name].values)
-
-    print(clipped_features)
-    
-    clipped_X_vals = np.column_stack(clipped_X_vals)
-    '''
  
-    #----------SVM Model Creation-------#
+    #--SVM Model Creation--#
     svm_model = my_svm(clipped_X_vals, y_vals)
     
-    X_preprocessed, y_preprocessed = svm_model.preprocess()
-    
+    X_preprocessed_svm, y_preprocessed_svm = svm_model.preprocess()
+
+
+    #--GridSearchCV for Hyperparameter Tuning--#
     grid_params = {
         'C': [0.1, 1, 10, 50, 100, 300, 500, 1000],
         'kernel': ['rbf'],
         'gamma': ['scale', 'auto', 0.1, 0.01, 0.001]
     }
-
-    #-----------RFC Model Creation-------#
-    rfc_model = my_RFC(clipped_X_vals, y_vals)
-    X_preprocessed_rfc, y_preprocessed_rfc = rfc_model.preprocess()
-
-    #---------GridSearchCV for Hyperparameter Tuning---------#
-    
     svc_test = SVC()
     grid_search = GridSearchCV(svc_test, grid_params, scoring='accuracy', cv=5)
-    grid_search.fit(X_preprocessed, y_preprocessed)
+    grid_search.fit(X_preprocessed_svm, y_preprocessed_svm)
     best_params = grid_search.best_params_
     print("Best parameters from GridSearchCV: ", best_params)
     
-    #---------Cross Validation SVM---------#
-    avg_tss, avg_loss, all_tss, cm_arr, avg_precision, avg_recall, avg_f1, avg_acc = svm_model.cross_validation(X_preprocessed, y_preprocessed, best_params)
+    #--Cross Validation SVM--#
+    avg_tss, avg_loss, all_tss, cm_arr, avg_precision, avg_recall, avg_f1, avg_acc = svm_model.cross_validation(X_preprocessed_svm, y_preprocessed_svm, best_params)
 
-    #---------Cross Validation RFC---------#
+    #--RFC Model Creation--#
+    rfc_model = my_RFC(clipped_X_vals, y_vals)
+    X_preprocessed_rfc, y_preprocessed_rfc = rfc_model.preprocess()
+
+    #--Cross Validation RFC--#
     rfc_avg_loss, rfc_cm_arr, rfc_avg_precision, rfc_avg_recall, rfc_avg_f1, rfc_avg_acc = rfc_model.cross_validation(X_preprocessed_rfc, y_preprocessed_rfc)
 
-    #print("X_pre: ",X_preprocessed)
-    #print("Y_pre: ",y_preprocessed)
-
-    print("Baseline Prediction: ", boyer_moore_out)
-
+    #--SVM Results--#
     print("SVM Training Results:")
     print("avg_tss: ", avg_tss)
     print("avg_loss: ", avg_loss)
@@ -375,7 +347,9 @@ def experiment():
     print("avg_recall: ", avg_recall)
     print("avg_f1: ", avg_f1)
     print("avg_acc: ", avg_acc)
+    print("---------------------------------")
 
+    #--RFC Results--#
     print("RFC Training Results:")
     print("avg_loss: ", rfc_avg_loss)
     print("avg_precision: ", rfc_avg_precision)
@@ -383,7 +357,7 @@ def experiment():
     print("avg_f1: ", rfc_avg_f1)
     print("avg_acc: ", rfc_avg_acc)    
 
-    #---------Plotting---------#
+    #--Plotting--#
     fig1, ax1 = plt.subplots()
     fig2, ax2 = plt.subplots()
 
@@ -402,8 +376,7 @@ def experiment():
     disp2.plot()
     disp2.ax_.set_title(f"Confusion Matrix RFC")
 
-    # TSS Scores Graph
-    #ax1.figure(figsize=(8,4))
+    # TSS Scores Graph SVM
     ax1.bar(range(1, len(all_tss)+1), all_tss)
     ax1.set_xlabel("K-Fold")
     ax1.set_ylabel("TSS Score")
@@ -419,7 +392,5 @@ def experiment():
     ax2.set_title(f"Correlation Between Features and Outputs")
     '''
     plt.show()
-    
-
-    
+     
 experiment()
