@@ -29,6 +29,7 @@ from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif, f_classif
 import random
+scalar = StandardScaler()
 
 #-------Model Support Vector Machine (SVM) Definition-------#
 class my_svm():
@@ -40,7 +41,7 @@ class my_svm():
         pass
 
     def preprocess(self):
-        scalar = StandardScaler()
+        
         self.x = scalar.fit_transform(self.x)
         
         return self.x, self.y
@@ -69,7 +70,6 @@ class my_svm():
 
             y_pred = model.predict(X_test)
             tss_score, cm_arr = self.tss(y_test, y_pred)
-
             TN_arr.append(cm_arr[0])
             FP_arr.append(cm_arr[1])
             FN_arr.append(cm_arr[2])
@@ -109,9 +109,15 @@ class my_svm():
         kernel_best = best_params['kernel']
         gamma_best = best_params.get('gamma', 'scale')
 
-        model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best)
+        model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best, probability=True)
         model.fit(X_train, y_train)
         return model
+
+    def predict(self, X_datapoint, X_train, y_train, best_params):
+        model = self.training(X_train, y_train, best_params)
+        prediction = model.predict(X_datapoint)
+        confidence = model.predict_proba(X_datapoint)
+        return prediction, confidence
 
     def tss(self, y_true, y_pred):
         
@@ -234,7 +240,7 @@ class my_RFC():
 
             y_pred = model.predict(X_test)
             _, cm_arr = self.tss(y_test, y_pred)
-
+            
             TN_arr.append(cm_arr[0])
             FP_arr.append(cm_arr[1])
             FN_arr.append(cm_arr[2])
@@ -292,14 +298,11 @@ def experiment():
     X_vals = [] # Features array
     all_tss = [] # TSS values
     cm_arr = [] # Confusion Matrix values
+    response_arr = [] #Matrix to store values for user response
 
     #--Append feature values to feature array--#
     for name in features:
         X_vals.append(ddf[name].values)
-
-    #--Baseline Model Prediction--#
-    boyer_moore_out = boyer_moore(y_vals)
-    print("Baseline Prediction: ", boyer_moore_out)
 
     #--Feature Vector Selection--#
     # Convert features to matrix (same as before)
@@ -309,13 +312,29 @@ def experiment():
     selected_mask = selector.get_support()
     clipped_features = [feat for feat, keep in zip(features, selected_mask) if keep]
     clipped_X_vals = X_selected
+
+    #---User Input for Graphs or User data Analysis---#
+    response = input("Would you like to generate graphs(1) or predict the output from one set of values(2)? ")
+    response = int(response)
+    if response == 2:
+        for feat in clipped_features:
+            feature_resp = input(f"Please enter your reading for feature {feat}: ")
+            feature_resp = int(feature_resp)
+            response_arr.append(feature_resp)
+        responses_arr = []
+        responses_arr.append(response_arr)
+
+    #--Baseline Model Prediction--#
+    boyer_moore_out = boyer_moore(y_vals)
+    print("Baseline Prediction: ", boyer_moore_out)
+
     print("Selected features:", clipped_features)
  
     #--SVM Model Creation--#
     svm_model = my_svm(clipped_X_vals, y_vals)
     
     X_preprocessed_svm, y_preprocessed_svm = svm_model.preprocess()
-
+    
     #--GridSearchCV for Hyperparameter Tuning--#
     grid_params = {
         'C': [0.1, 1, 10, 50, 100, 300, 500, 1000],
@@ -356,40 +375,49 @@ def experiment():
     print("avg_f1: ", rfc_avg_f1)
     print("avg_acc: ", rfc_avg_acc)     
 
-    #--Plotting--#
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
+    if response == 1:
+        #--Plotting--#
+        fig1, ax1 = plt.subplots()
+        fig2, ax2 = plt.subplots()
 
-    mean = np.mean(all_tss)
-    std_dev = np.std(all_tss)
+        mean = np.mean(all_tss)
+        std_dev = np.std(all_tss)
 
-    # Confusion Matrix SVM
-    cm = np.array([[cm_arr[0], cm_arr[1]], [cm_arr[2], cm_arr[3]]])
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
-    disp.plot()
-    disp.ax_.set_title(f"Confusion Matrix SVM")
+        # Confusion Matrix SVM
+        cm = np.array([[cm_arr[0], cm_arr[1]], [cm_arr[2], cm_arr[3]]])
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
+        disp.plot()
+        disp.ax_.set_title(f"Confusion Matrix SVM")
 
-    # Confusion Matrix RFC
-    cm2 = np.array([[rfc_cm_arr[0], rfc_cm_arr[1]], [rfc_cm_arr[2], rfc_cm_arr[3]]])
-    disp2 = ConfusionMatrixDisplay(confusion_matrix=cm2, display_labels=[0,1])
-    disp2.plot()
-    disp2.ax_.set_title(f"Confusion Matrix RFC")
+        # Confusion Matrix RFC
+        cm2 = np.array([[rfc_cm_arr[0], rfc_cm_arr[1]], [rfc_cm_arr[2], rfc_cm_arr[3]]])
+        disp2 = ConfusionMatrixDisplay(confusion_matrix=cm2, display_labels=[0,1])
+        disp2.plot()
+        disp2.ax_.set_title(f"Confusion Matrix RFC")
 
-    # TSS Scores Graph SVM
-    ax1.bar(range(1, len(all_tss)+1), all_tss)
-    ax1.set_xlabel("K-Fold")
-    ax1.set_ylabel("TSS Score")
-    ax1.set_ylim(-1,1)
-    ax1.set_title(f"TSS Scores per K-Fold \nGiven:\n Mean (Avg. TSS): {mean:.4f} \u03C3: {std_dev:.4f}")
+        # TSS Scores Graph SVM
+        ax1.bar(range(1, len(all_tss)+1), all_tss)
+        ax1.set_xlabel("K-Fold")
+        ax1.set_ylabel("TSS Score")
+        ax1.set_ylim(-1,1)
+        ax1.set_title(f"TSS Scores per K-Fold \nGiven:\n Mean (Avg. TSS): {mean:.4f} \u03C3: {std_dev:.4f}")
 
-    '''
-    # View Correlation on Bar Graph
-    ax2.bar(features, correlation_arr)
-    ax2.set_xlabel("Features")
-    ax2.set_ylabel("Correlation Score")
-    ax2.set_ylim(-1,1)
-    ax2.set_title(f"Correlation Between Features and Outputs")
-    '''
-    plt.show()
+        '''
+        # View Correlation on Bar Graph
+        ax2.bar(features, correlation_arr)
+        ax2.set_xlabel("Features")
+        ax2.set_ylabel("Correlation Score")
+        ax2.set_ylim(-1,1)
+        ax2.set_title(f"Correlation Between Features and Outputs")
+        '''
+        plt.show()
+    else:
+        print(responses_arr)
+        responses_arr = scalar.transform(np.array(responses_arr))
+        prediction, confidence = svm_model.predict(responses_arr,  X_preprocessed_svm, y_preprocessed_svm, best_params)
+        prediction_result = int(prediction[0])
+        predict_return = ['do not have diabetes', 'have pre-diabetes/diabetes']
+        confidence = 100 * float(confidence[0, prediction_result])
+        print(f"Model has predicted that you {predict_return[prediction_result]} with a confidence of {confidence:.2f}%")
      
 experiment()
