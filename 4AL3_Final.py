@@ -46,6 +46,52 @@ class my_svm():
         
         return self.x, self.y
     
+    def training(self, X_train, y_train, best_params):
+        C_best = best_params['C']
+        kernel_best = best_params['kernel']
+        gamma_best = best_params.get('gamma', 'scale')
+
+        model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best, probability=True)
+        model.fit(X_train, y_train)
+        return model
+    
+    def hinge_loss(self, y_true, y_pred):
+        #change y_true, y_pred from 0 to -1 to use in hinge_loss function
+        y_true_h = np.where(y_true == 0, -1, 1)
+        y_pred_h = np.where(y_pred == 0, -1, 1)
+
+        loss = hinge_loss(y_true_h, y_pred_h) # function uses -1 and 1 as classes
+        return loss
+    
+    def scores(self, y_true, y_pred):
+        precision = precision_score(y_true, y_pred, zero_division = 0)
+        recall = recall_score(y_true, y_pred, zero_division = 0)
+        f1 = f1_score(y_true, y_pred, zero_division = 0)
+    
+        return precision, recall, f1
+
+    def tss(self, y_true, y_pred):
+        
+        TP = np.sum((y_true == 1) & (y_pred == 1))
+        TN = np.sum((y_true == 0) & (y_pred == 0))
+        FP = np.sum((y_true == 0) & (y_pred == 1))
+        FN = np.sum((y_true == 1) & (y_pred == 0))
+
+        if TP + FN > 0:
+            true_positive = TP/(TP + FN)
+        else:
+            true_positive = 0
+        
+        if FP + TN > 0:
+            false_positive = FP/(FP + TN)
+        else:
+            false_positive = 0
+        tss_score = true_positive - false_positive
+        cm_arr = np.array([TN, FP, FN, TP])
+
+        return tss_score, cm_arr
+
+    
     def cross_validation(self, X, y, best_params):
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         tss_scores = []
@@ -79,7 +125,7 @@ class my_svm():
             loss_score = self.hinge_loss(y_test, y_pred)
             loss_scores.append(loss_score)
 
-            precision, recall, f1 = self.f1_score(y_test, y_pred)
+            precision, recall, f1 = self.scores(y_test, y_pred)
             precision_scores.append(precision)
             recall_scores.append(recall)
             f1_scores.append(f1)
@@ -104,56 +150,12 @@ class my_svm():
 
         return avg_tss, avg_loss, tss_scores, cm_arr, avg_precision, avg_recall, avg_f1, avg_accuracy
     
-    def training(self, X_train, y_train, best_params):
-        C_best = best_params['C']
-        kernel_best = best_params['kernel']
-        gamma_best = best_params.get('gamma', 'scale')
-
-        model = SVC(kernel=kernel_best, C = C_best, class_weight='balanced', gamma=gamma_best, probability=True)
-        model.fit(X_train, y_train)
-        return model
-
     def predict(self, X_datapoint, X_train, y_train, best_params):
         model = self.training(X_train, y_train, best_params)
         prediction = model.predict(X_datapoint)
         confidence = model.predict_proba(X_datapoint)
         return prediction, confidence
 
-    def tss(self, y_true, y_pred):
-        
-        TP = np.sum((y_true == 1) & (y_pred == 1))
-        TN = np.sum((y_true == 0) & (y_pred == 0))
-        FP = np.sum((y_true == 0) & (y_pred == 1))
-        FN = np.sum((y_true == 1) & (y_pred == 0))
-
-        if TP + FN > 0:
-            true_positive = TP/(TP + FN)
-        else:
-            true_positive = 0
-        
-        if FP + TN > 0:
-            false_positive = FP/(FP + TN)
-        else:
-            false_positive = 0
-        tss_score = true_positive - false_positive
-        cm_arr = np.array([TN, FP, FN, TP])
-
-        return tss_score, cm_arr
-    
-    def hinge_loss(self, y_true, y_pred):
-        #change y_true, y_pred from 0 to -1 to use in hinge_loss function
-        y_true_h = np.where(y_true == 0, -1, 1)
-        y_pred_h = np.where(y_pred == 0, -1, 1)
-
-        loss = hinge_loss(y_true_h, y_pred_h) # function uses -1 and 1 as classes
-        return loss
-    
-    def f1_score(self, y_true, y_pred):
-        precision = precision_score(y_true, y_pred, zero_division = 0)
-        recall = recall_score(y_true, y_pred, zero_division = 0)
-        f1 = f1_score(y_true, y_pred, zero_division = 0)
-    
-        return precision, recall, f1
 
 #-------Model Random Forest Classifier (RFC) Definition-------#        
 class my_RFC():
