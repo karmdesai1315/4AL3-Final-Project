@@ -170,10 +170,13 @@ class my_RFC():
         
         return self.x, self.y
      
-     def training(self, X_train, y_train):
+     def training(self, X_train, y_train, best_params):
+        n_best = best_params['n_estimators']
+        weight_best = best_params['class_weight']
+        
         model = RandomForestClassifier(
-        n_estimators=100,
-        class_weight='balanced',
+        n_estimators=n_best,
+        class_weight=weight_best,
         max_depth=None,
         random_state=42
         )
@@ -217,7 +220,7 @@ class my_RFC():
 
         return tss_score, cm_arr
      
-     def cross_validation(self, X, y):
+     def cross_validation(self, X, y, best_params):
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         loss_scores = []
         precision_scores = []
@@ -236,7 +239,7 @@ class my_RFC():
             
             X_train, X_test = X[train_idx], X[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
-            model = self.training(X_train, y_train)
+            model = self.training(X_train, y_train, best_params)
 
             y_pred = model.predict(X_test)
             _, cm_arr = self.tss(y_test, y_pred)
@@ -307,7 +310,7 @@ def experiment():
     #--Feature Vector Selection--#
     # Convert features to matrix (same as before)
     X_vals = np.column_stack([ddf[name].values for name in features])
-    selector = SelectKBest(score_func=f_classif, k=10) 
+    selector = SelectKBest(score_func=mutual_info_classif, k=10) 
     X_selected = selector.fit_transform(X_vals, y_vals)
     selected_mask = selector.get_support()
     clipped_features = [feat for feat, keep in zip(features, selected_mask) if keep]
@@ -335,7 +338,7 @@ def experiment():
     
     X_preprocessed_svm, y_preprocessed_svm = svm_model.preprocess()
     
-    #--GridSearchCV for Hyperparameter Tuning--#
+    #--GridSearchCV for SVM Hyperparameter Tuning--#
     grid_params = {
         'C': [0.1, 1, 10, 50, 100, 300, 500, 1000],
         'kernel': ['rbf'],
@@ -345,8 +348,8 @@ def experiment():
     grid_search = GridSearchCV(svc_test, grid_params, scoring='accuracy', cv=5)
     grid_search.fit(X_preprocessed_svm, y_preprocessed_svm)
     best_params = grid_search.best_params_
-    print("Best parameters from GridSearchCV: ", best_params)
-    
+    print("Best parameters from SVM GridSearchCV: ", best_params)
+
     #--Cross Validation SVM--#
     avg_tss, avg_loss, all_tss, cm_arr, avg_precision, avg_recall, avg_f1, avg_acc = svm_model.cross_validation(X_preprocessed_svm, y_preprocessed_svm, best_params)
 
@@ -354,8 +357,19 @@ def experiment():
     rfc_model = my_RFC(clipped_X_vals, y_vals)
     X_preprocessed_rfc, y_preprocessed_rfc = rfc_model.preprocess()
 
+    #--GridSearchCV for RFC Hyperparameter Tunin--#
+    grid_params = {
+        'n_estimators': [10, 25, 50, 100, 250],
+        'class_weight': ['balanced', 'balanced_subsample'],
+    }
+    rfc_test = RandomForestClassifier()
+    grid_search = GridSearchCV(rfc_test, grid_params, scoring='accuracy', cv=5)
+    grid_search.fit(X_preprocessed_rfc, y_preprocessed_rfc)
+    best_params = grid_search.best_params_
+    print("Best parameters from RFC GridSearchCV: ", best_params)
+
     #--Cross Validation RFC--#
-    rfc_avg_loss, rfc_cm_arr, rfc_avg_precision, rfc_avg_recall, rfc_avg_f1, rfc_avg_acc = rfc_model.cross_validation(X_preprocessed_rfc, y_preprocessed_rfc)
+    rfc_avg_loss, rfc_cm_arr, rfc_avg_precision, rfc_avg_recall, rfc_avg_f1, rfc_avg_acc = rfc_model.cross_validation(X_preprocessed_rfc, y_preprocessed_rfc, best_params)
 
     #--SVM Results--#
     print("SVM Training Results:")
@@ -378,7 +392,6 @@ def experiment():
     if response == 1:
         #--Plotting--#
         fig1, ax1 = plt.subplots()
-        fig2, ax2 = plt.subplots()
 
         mean = np.mean(all_tss)
         std_dev = np.std(all_tss)
@@ -402,14 +415,7 @@ def experiment():
         ax1.set_ylim(-1,1)
         ax1.set_title(f"TSS Scores per K-Fold \nGiven:\n Mean (Avg. TSS): {mean:.4f} \u03C3: {std_dev:.4f}")
 
-        '''
-        # View Correlation on Bar Graph
-        ax2.bar(features, correlation_arr)
-        ax2.set_xlabel("Features")
-        ax2.set_ylabel("Correlation Score")
-        ax2.set_ylim(-1,1)
-        ax2.set_title(f"Correlation Between Features and Outputs")
-        '''
+        
         plt.show()
     else:
         print(responses_arr)
