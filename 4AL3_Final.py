@@ -18,7 +18,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn
 import sklearn
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
+from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, hinge_loss
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
@@ -303,19 +304,17 @@ def experiment():
     #--Feature Vector Selection--#
     # Convert features to matrix (same as before)
     X_vals = np.column_stack([ddf[name].values for name in features])
-    selector = SelectKBest(score_func=mutual_info_classif, k=10)  
+    selector = SelectKBest(score_func=f_classif, k=10) 
     X_selected = selector.fit_transform(X_vals, y_vals)
     selected_mask = selector.get_support()
     clipped_features = [feat for feat, keep in zip(features, selected_mask) if keep]
     clipped_X_vals = X_selected
-
     print("Selected features:", clipped_features)
  
     #--SVM Model Creation--#
     svm_model = my_svm(clipped_X_vals, y_vals)
     
     X_preprocessed_svm, y_preprocessed_svm = svm_model.preprocess()
-
 
     #--GridSearchCV for Hyperparameter Tuning--#
     grid_params = {
@@ -355,7 +354,7 @@ def experiment():
     print("avg_precision: ", rfc_avg_precision)
     print("avg_recall: ", rfc_avg_recall)
     print("avg_f1: ", rfc_avg_f1)
-    print("avg_acc: ", rfc_avg_acc)    
+    print("avg_acc: ", rfc_avg_acc)     
 
     #--Plotting--#
     fig1, ax1 = plt.subplots()
