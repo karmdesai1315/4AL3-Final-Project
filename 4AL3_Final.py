@@ -11,24 +11,17 @@
 # Python Documentation
 
 #-------Imports-------#
-import os
-import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn
 import sklearn
-from sklearn.svm import SVC, LinearSVC
-from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import KFold
+from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, hinge_loss
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit, StratifiedKFold
-from sklearn.datasets import make_classification
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectKBest, mutual_info_classif, f_classif
-import random
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 scalar = StandardScaler()
 
 #-------Model Support Vector Machine (SVM) Definition-------#
@@ -163,7 +156,6 @@ class my_RFC():
         #Class features and labels initialization
         self.x = np.array(x_)
         self.y = np.array(y_)
-
         pass
      
      def preprocess(self):
@@ -391,6 +383,7 @@ def experiment():
     print("avg_f1: ", rfc_avg_f1)
     print("avg_acc: ", rfc_avg_acc)     
 
+    #--Plotting/Results Output--#
     if response == 1:
         #--Plotting--#
         fig1, ax1 = plt.subplots()
