@@ -360,18 +360,18 @@ def experiment():
     X_preprocessed_rfc, y_preprocessed_rfc = rfc_model.preprocess()
 
     #--GridSearchCV for RFC Hyperparameter Tunin--#
-    grid_params = {
+    grid_params_rfc = {
         'n_estimators': [10, 25, 50, 100, 250],
         'class_weight': ['balanced', 'balanced_subsample'],
     }
     rfc_test = RandomForestClassifier()
-    grid_search = GridSearchCV(rfc_test, grid_params, scoring='accuracy', cv=5)
+    grid_search = GridSearchCV(rfc_test, grid_params_rfc, scoring='accuracy', cv=5)
     grid_search.fit(X_preprocessed_rfc, y_preprocessed_rfc)
-    best_params = grid_search.best_params_
-    print("Best parameters from RFC GridSearchCV: ", best_params)
+    best_params_rfc = grid_search.best_params_
+    print("Best parameters from RFC GridSearchCV: ", best_params_rfc)
 
     #--Cross Validation RFC--#
-    rfc_avg_loss, rfc_cm_arr, rfc_avg_precision, rfc_avg_recall, rfc_avg_f1, rfc_avg_acc = rfc_model.cross_validation(X_preprocessed_rfc, y_preprocessed_rfc, best_params)
+    rfc_avg_loss, rfc_cm_arr, rfc_avg_precision, rfc_avg_recall, rfc_avg_f1, rfc_avg_acc = rfc_model.cross_validation(X_preprocessed_rfc, y_preprocessed_rfc, best_params_rfc)
 
     #--SVM Results--#
     print("SVM Training Results:")
@@ -420,7 +420,6 @@ def experiment():
         
         plt.show()
     else:
-        print(responses_arr)
         responses_arr = scalar.transform(np.array(responses_arr))
         prediction, confidence = svm_model.predict(responses_arr,  X_preprocessed_svm, y_preprocessed_svm, best_params)
         prediction_result = int(prediction[0])
